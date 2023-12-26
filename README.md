@@ -25,6 +25,7 @@ Here are the highlights of this implementation: <br/>
 
 - A **Elasticnet Regression Forecaster** algorithm built using **Scikit-Learn**
   Additionally, the implementation contains the following features:
+- **Hyperparameter Tuning**: HPT is implemented using **scikit-optimize** library. To perform hyperparameter-tuning, run the training script (`src/train.py`) with the `--tune` or `-t` flag. This will identify the best hyperparameters using Bayesian Optimization and use those to train the model.
 - **Data Validation**: Pydantic data validation is used for the schema, training and test files, as well as the inference request data.
 - **Error handling and logging**: Python's logging module is used for logging and key functions include exception handling.
 
@@ -69,7 +70,7 @@ In this section we cover the following:
 
 - Create your virtual environment and install dependencies listed in `requirements.txt` which is inside the `root` directory.
 - Move the three example files (`smoke_test_forecasting_schema.json`, `smoke_test_forecasting_train.csv` and `smoke_test_forecasting_test.csv`) in the `examples` directory into the `./model_inputs_outputs/inputs/schema`, `./model_inputs_outputs/inputs/data/training` and `./model_inputs_outputs/inputs/data/testing` folders, respectively (or alternatively, place your custom dataset files in the same locations).
-- Run the script `src/train.py` to train the Elasticnet Regressor classifier model. This will save the model artifacts, including the preprocessing pipeline and label encoder, in the path `./model_inputs_outputs/model/artifacts/`.
+- Run the script `src/train.py` to train the Elasticnet Regressor classifier model. This will save the model artifacts, including the preprocessing pipeline and label encoder, in the path `./model_inputs_outputs/model/artifacts/`. You can use the `--tune` or `-t` flag to perform hyperparameter tuning. This will identify the best hyperparameters using Bayesian Optimization and use those to train the model.
 - Run the script `src/predict.py` to run batch predictions using the trained model. This script will load the artifacts and create and save the predictions in a file called `predictions.csv` in the path `./model_inputs_outputs/outputs/predictions/`.
 
 ### To run with Docker
