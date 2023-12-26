@@ -1,0 +1,21 @@
+{
+  "num_trials": 20,
+  "hyperparameters": [
+    {
+      "name": "l1_ratio",
+      "short_desc": "The Elastic-Net mixing parameter, with 0 <= l1_ratio <= 1.",
+      "type": "real",
+      "search_type": "uniform",
+      "range_low": 1e-2,
+      "range_high": 1.0
+    },
+    {
+      "name": "alpha",
+      "short_desc": "Constant that multiplies the penalty terms. Defaults to 1.0.",
+      "type": "real",
+      "search_type": "uniform",
+      "range_low": 1e-2,
+      "range_high": 1.0
+    }
+  ]
+}
