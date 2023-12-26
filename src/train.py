@@ -126,7 +126,7 @@ def run_training(
                 default_hyperparameters_file_path=default_hyperparameters_file_path,
                 hpt_specs_file_path=hpt_specs_file_path,
             )
-            logger.info("Training regression model...")
+            logger.info("Training forecaster...")
             forecaster = train_predictor_model(
                 train_data=transformed_data,
                 forecast_length=data_schema.forecast_length,
