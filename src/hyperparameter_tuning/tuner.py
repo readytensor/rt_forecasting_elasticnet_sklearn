@@ -217,7 +217,7 @@ class HyperParameterTuner:
             # Number of calls to `func`,
             n_calls=self.num_trials,
             random_state=0,
-            callback=[logger_callback, StoppingCriterion(delta=0.03, n_best=5)],
+            callback=[logger_callback, StoppingCriterion(delta=0.001, n_best=5)],
             verbose=False,
         )
         self.save_hpt_summary_results(optimizer_results)
