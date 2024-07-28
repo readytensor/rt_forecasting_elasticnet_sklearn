@@ -103,6 +103,7 @@ def cast_time_col(data: pd.DataFrame, time_col: str, dtype: str) -> pd.DataFrame
         raise ValueError(f"Invalid data type for time column: {dtype}")
     return data
 
+
 def set_seeds(seed_value: int) -> None:
     """
     Set the random seeds for Python, NumPy, etc. to ensure
@@ -163,7 +164,9 @@ def split_train_val_by_series(
     return train_data, val_data
 
 
-def train_test_split(data: np.ndarray, test_split: float = 0.2) -> Tuple[np.ndarray, np.ndarray]:
+def train_test_split(
+    data: np.ndarray, test_split: float = 0.2
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Splits a numpy array into train and test sets along the first dimension.
 

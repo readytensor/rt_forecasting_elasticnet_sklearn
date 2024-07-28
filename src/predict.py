@@ -9,7 +9,7 @@ from prediction.predictor_model import load_predictor_model, predict_with_model
 from preprocessing.preprocess import (
     load_pipeline_of_type,
     fit_transform_with_pipeline,
-    inverse_scale_predictions
+    inverse_scale_predictions,
 )
 from schema.data_schema import load_saved_schema
 from utils import (
@@ -28,7 +28,7 @@ def create_predictions_dataframe(
         predictions_arr: np.ndarray,
         prediction_field_name: str,
         id_field_name: str,
-        time_field_name: str
+        time_field_name: str,
     ) -> pd.DataFrame:
     """
     Converts the predictions numpy array into a dataframe having the required structure.
@@ -47,11 +47,15 @@ def create_predictions_dataframe(
     N_test = pred_input[id_field_name].unique().shape[0]
     T_test = pred_input[time_field_name].unique().shape[0]
     if N_train != N_test:
-        raise ValueError(f"Number of series in test input ({N_test}) does not match"
-                         f"# of series in train data ({N_train})")
+        raise ValueError(
+            f"Number of series in test input ({N_test}) does not match"
+            f"# of series in train data ({N_train})"
+        )
     if T_train != T_test:
-        raise ValueError(f"Length of series in test input ({N_test}) does not match"
-                         f"expected forecast window length ({N_train})")
+        raise ValueError(
+            f"Length of series in test input ({N_test}) does not match"
+            f"expected forecast window length ({N_train})"
+        )
     
     predictions_df = pred_input[[id_field_name, time_field_name]].copy()
     predictions_df.sort_values(by=[id_field_name, time_field_name], inplace=True)
