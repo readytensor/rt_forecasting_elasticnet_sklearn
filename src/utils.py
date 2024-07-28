@@ -1,10 +1,11 @@
 import json
 import os
 import random
+import time
 from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import tracemalloc
 
 
 def read_json_as_dict(input_path: str) -> Dict:
@@ -274,3 +275,28 @@ def make_serializable(obj: Any) -> Union[int, float, List[Union[int, float]], An
         return obj.tolist()
     else:
         return json.JSONEncoder.default(None, obj)
+
+
+class TimeAndMemoryTracker(object):
+    """
+    This class serves as a context manager to track time and
+    memory allocated by code executed inside it.
+    """
+
+    def __init__(self, logger):
+        self.logger = logger
+
+    def __enter__(self):
+        tracemalloc.start()
+        self.start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.end_time = time.time()
+        _, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        elapsed_time = self.end_time - self.start_time
+
+        self.logger.info(f"Execution time: {elapsed_time:.2f} seconds")
+        self.logger.info(f"Memory allocated (peak): {peak / 1024**2:.2f} MB")
