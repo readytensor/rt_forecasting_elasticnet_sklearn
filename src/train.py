@@ -19,7 +19,8 @@ from utils import (
     read_csv_in_directory,
     read_json_as_dict,
     set_seeds,
-    train_test_split
+    train_test_split,
+    TimeAndMemoryTracker,
 )
 
 logger = get_logger(task_name="train")
@@ -62,93 +63,91 @@ def run_training(
 
     try:
 
-        logger.info("Starting training...")
-        start = time.time()
-        # load and save schema
-        logger.info("Loading and saving schema...")
-        data_schema = load_json_data_schema(input_schema_dir)
-        save_schema(schema=data_schema, save_dir_path=saved_schema_dir_path)
+        with TimeAndMemoryTracker(logger) as _:
 
-        # load model config
-        logger.info("Loading model config...")
-        model_config = read_json_as_dict(model_config_file_path)
+            logger.info("Starting training...")
+            # load and save schema
+            logger.info("Loading and saving schema...")
+            data_schema = load_json_data_schema(input_schema_dir)
+            save_schema(schema=data_schema, save_dir_path=saved_schema_dir_path)
 
-        # set seeds
-        logger.info("Setting seeds...")
-        set_seeds(seed_value=model_config["seed_value"])
+            # load model config
+            logger.info("Loading model config...")
+            model_config = read_json_as_dict(model_config_file_path)
 
-        # load train data
-        logger.info("Loading train data...")
-        train_data = read_csv_in_directory(train_dir)
+            # set seeds
+            logger.info("Setting seeds...")
+            set_seeds(seed_value=model_config["seed_value"])
 
-        # validate the data
-        logger.info("Validating train data...")
-        validated_data = validate_data(
-            data=train_data, data_schema=data_schema, is_train=True
-        )
+            # load train data
+            logger.info("Loading train data...")
+            train_data = read_csv_in_directory(train_dir)
 
-        logger.info("Loading preprocessing config...")
-        preprocessing_config = read_json_as_dict(preprocessing_config_file_path)
+            # validate the data
+            logger.info("Validating train data...")
+            validated_data = validate_data(
+                data=train_data, data_schema=data_schema, is_train=True
+            )
 
-        # use default hyperparameters to train model
-        logger.info("Loading hyperparameters...")
-        default_hyperparameters = read_json_as_dict(
-            default_hyperparameters_file_path
-        )
+            logger.info("Loading preprocessing config...")
+            preprocessing_config = read_json_as_dict(preprocessing_config_file_path)
 
-        # fit and transform using pipeline and target encoder, then save them
-        logger.info("Training preprocessing pipeline...")
-        training_pipeline, inference_pipeline, encode_len = get_preprocessing_pipelines(
-            data_schema, validated_data, preprocessing_config,
-            default_hyperparameters
-        )
-        trained_pipeline, transformed_data = fit_transform_with_pipeline(
-            training_pipeline, validated_data
-        )
-        logger.info(f"Transformed training data shape: {transformed_data.shape}")
+            # use default hyperparameters to train model
+            logger.info("Loading hyperparameters...")
+            default_hyperparameters = read_json_as_dict(
+                default_hyperparameters_file_path
+            )
+
+            # fit and transform using pipeline and target encoder, then save them
+            logger.info("Training preprocessing pipeline...")
+            training_pipeline, inference_pipeline, encode_len = get_preprocessing_pipelines(
+                data_schema, validated_data, preprocessing_config,
+                default_hyperparameters
+            )
+            trained_pipeline, transformed_data = fit_transform_with_pipeline(
+                training_pipeline, validated_data
+            )
+            logger.info(f"Transformed training data shape: {transformed_data.shape}")
+
+            # hyperparameter tuning + training the model
+            if run_tuning:
+                logger.info("Tuning hyperparameters...")
+                train_split, valid_split = train_test_split(
+                    transformed_data,
+                    test_split=model_config["validation_split"]
+                )
+                tuned_hyperparameters = tune_hyperparameters(
+                    train_split=train_split,
+                    valid_split=valid_split,
+                    forecast_length=data_schema.forecast_length,
+                    hpt_results_dir_path=hpt_results_dir_path,
+                    is_minimize=False, # scoring metric is r-squared - so maximize it.
+                    default_hyperparameters_file_path=default_hyperparameters_file_path,
+                    hpt_specs_file_path=hpt_specs_file_path,
+                )
+                logger.info("Training forecaster...")
+                forecaster = train_predictor_model(
+                    train_data=transformed_data,
+                    forecast_length=data_schema.forecast_length,
+                    hyperparameters=tuned_hyperparameters,
+                )
+            else:
+                # # use default hyperparameters to train model
+                logger.info("Training forecaster...")
+                forecaster = train_predictor_model(
+                    train_data=transformed_data,
+                    forecast_length=data_schema.forecast_length,
+                    hyperparameters=default_hyperparameters
+                )
 
         # Save pipelines
         logger.info("Saving pipelines...")
         save_pipelines(trained_pipeline, inference_pipeline, preprocessing_dir_path)
 
-        # hyperparameter tuning + training the model
-        if run_tuning:
-            logger.info("Tuning hyperparameters...")
-            train_split, valid_split = train_test_split(
-                transformed_data,
-                test_split=model_config["validation_split"]
-            )
-            tuned_hyperparameters = tune_hyperparameters(
-                train_split=train_split,
-                valid_split=valid_split,
-                forecast_length=data_schema.forecast_length,
-                hpt_results_dir_path=hpt_results_dir_path,
-                is_minimize=False, # scoring metric is r-squared - so maximize it.
-                default_hyperparameters_file_path=default_hyperparameters_file_path,
-                hpt_specs_file_path=hpt_specs_file_path,
-            )
-            logger.info("Training forecaster...")
-            forecaster = train_predictor_model(
-                train_data=transformed_data,
-                forecast_length=data_schema.forecast_length,
-                hyperparameters=tuned_hyperparameters,
-            )
-        else:
-            # # use default hyperparameters to train model
-            logger.info("Training forecaster...")
-            forecaster = train_predictor_model(
-                train_data=transformed_data,
-                forecast_length=data_schema.forecast_length,
-                hyperparameters=default_hyperparameters
-            )
-
         # save predictor model
         logger.info("Saving forecaster...")
         save_predictor_model(forecaster, predictor_dir_path)
         
-        end = time.time()
-        elapsed_time = end - start
-        logger.info(f"Training completed in {round(elapsed_time/60., 3)} minutes")
 
     except Exception as exc:
         err_msg = "Error occurred during training."
