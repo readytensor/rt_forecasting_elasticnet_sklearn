@@ -68,9 +68,6 @@ def create_preprocess_pipelines(
             stride=1,
             max_windows=preprocessing_config["max_windows"],
         )),
-        ("left_right_flipper", transformers.LeftRightFlipper(
-            axis_to_flip=1
-        )),
         ("minmax_scaler", transformers.TimeSeriesMinMaxScaler(
             encode_len=encode_len,
             upper_bound=preprocessing_config["scaler_max_bound"],
